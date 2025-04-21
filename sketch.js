@@ -38,20 +38,21 @@ function setup() {
   background(255);
 
   if (introImage) {
-    image(introImage, 0, 0, width, height); // 将图片填充整个画布
+    image(introImage, 0, 0, width, height); // 將圖片填充整個畫布
   } else {
-    console.error("图片未加载成功");
+    console.error("圖片未加載成功");
   }
 
   // 初始化 iframe
   iframe = createElement("iframe");
   iframe.attribute("src", "");
-  iframe.attribute("title", "嵌入内容");
-  iframe.attribute("width", width * 0.8); // 调整 iframe 宽度
-  iframe.attribute("height", height * 0.6); // 调整 iframe 高度
-  iframe.position(width * 0.1, height * 0.2); // 居中显示
+  iframe.attribute("title", "嵌入內容");
+  iframe.attribute("width", width * 0.8); // 調整 iframe 寬度
+  iframe.attribute("height", height * 0.6); // 調整 iframe 高度
+  iframe.position(width * 0.1, height * 0.2); // 居中顯示
   iframe.style("border", "none");
-  iframe.hide(); // 初始隐藏
+  iframe.hide(); // 初始隱藏
+  iframe.style("z-index", "-1"); // 將 iframe 的圖層設置為較低
 
   // 初始化星星
   for (let i = 0; i < 100; i++) {
@@ -111,17 +112,23 @@ function handleSubmenuClick(index) {
 
 function draw() {
   if (flipping) {
-    drawFlipAnimation(); // 绘制翻书动画
+    drawFlipAnimation(); // 繪製翻書動畫
   } else {
-    drawBackground();
-    if (showMenu) {
-      drawMenu();
-      if (showSubmenu) {
-        drawSubmenu();
-      }
-    }
+    drawBackground(); // 繪製背景
     if (showIntroImage) {
-      displayIntroImage(); // 显示自我介绍图片
+      displayIntroImage(); // 顯示自我介紹圖片
+    }
+    if (iframe && iframe.elt.style.display !== "none") {
+      // 如果 iframe 顯示，保持其在背景之上
+      iframe.style("z-index", "0"); // 確保 iframe 在較低層
+    }
+  }
+
+  // 確保選單和子選單在最前面繪製
+  if (showMenu) {
+    drawMenu();
+    if (showSubmenu) {
+      drawSubmenu();
     }
   }
 }
@@ -252,7 +259,7 @@ function drawFlipAnimation() {
       iframe.attribute("src", iframeSrc); // 设置 iframe 的内容
       iframe.attribute("width", bookWidth); // 设置 iframe 宽度为书本宽度
       iframe.attribute("height", bookHeight); // 设置 iframe 高度为书本高度
-      iframe.style("overflow", "hidden"); // 移除滚动条
+      iframe.style("overflow", "hidden"); // 移除滾動條
       iframe.position(bookX, bookY); // 将 iframe 放置在书本的左上角
       iframe.show(); // 显示 iframe
       iframeSrc = ""; // 清空暂存的 iframe 内容
@@ -261,35 +268,49 @@ function drawFlipAnimation() {
 }
 
 function mouseMoved() {
-  let x = width * 0.1; // 主选单的起始位置
-  let y = height * 0.05; // 主选单的垂直位置
-  let menuWidth = 100; // 主选单项宽度
-  let menuHeight = 40; // 主选单项高度
-  let spacing = 10; // 主选单间距
+  let x = width * 0.1; // 主選單的起始位置
+  let y = height * 0.05; // 主選單的垂直位置
+  let menuWidth = 100; // 主選單項寬度
+  let menuHeight = 40; // 主選單項高度
+  let spacing = 10; // 主選單間距
 
-  // 检查是否悬停在主选单范围
-  hoverIndex = -1; // 重置悬停索引
-  submenuHoverIndex = -1; // 重置子选单悬停索引
-  showMenu = false; // 默认隐藏主选单
-
-  for (let i = 0; i < menuItems.length; i++) {
-    if (
-      mouseX > x + i * (menuWidth + spacing) &&
-      mouseX < x + i * (menuWidth + spacing) + menuWidth &&
-      mouseY > y &&
-      mouseY < y + menuHeight
-    ) {
-      hoverIndex = i; // 设置悬停的主选单索引
-      showMenu = true; // 显示主选单
-      break;
-    }
+  // 如果滑鼠位於選單上下左右的範圍，顯示主選單
+  if (
+    mouseX > x - 100 && // 左邊 100px
+    mouseX < x + menuItems.length * (menuWidth + spacing) + 100 && // 右邊 100px
+    mouseY > y - 100 && // 上方 100px
+    mouseY < y + menuHeight + 200 // 下方 200px
+  ) {
+    showMenu = true; // 顯示主選單
+  } else {
+    showMenu = false; // 隱藏主選單
   }
 
-  // 如果鼠标悬停在「作品集」按钮或子选单上，保持子选单显示
-  let submenuX = x + 2 * (menuWidth + spacing); // 子选单的起始位置
-  let submenuY = y + menuHeight + 10; // 子选单的垂直位置
-  if (hoverIndex === 2 || isMouseOverSubmenu(submenuX, submenuY)) {
-    showSubmenu = true; // 保持子选单显示
+  // 檢查是否懸停在主選單範圍
+  hoverIndex = -1; // 重置懸停索引
+  submenuHoverIndex = -1; // 重置子選單懸停索引
+
+  if (showMenu) {
+    for (let i = 0; i < menuItems.length; i++) {
+      if (
+        mouseX > x + i * (menuWidth + spacing) &&
+        mouseX < x + i * (menuWidth + spacing) + menuWidth &&
+        mouseY > y &&
+        mouseY < y + menuHeight
+      ) {
+        hoverIndex = i; // 設置懸停的主選單索引
+        break;
+      }
+    }
+
+    // 如果滑鼠懸停在「作品集」按鈕或子選單上，保持子選單顯示
+    let submenuX = x + 2 * (menuWidth + spacing); // 子選單的起始位置
+    let submenuY = y + menuHeight + 10; // 子選單的垂直位置
+    if (hoverIndex === 2 || isMouseOverSubmenu(submenuX, submenuY)) {
+      showSubmenu = true; // 保持子選單顯示
+    } else {
+      showSubmenu = false; // 隱藏子選單
+    }
   }
 }
 
@@ -303,10 +324,10 @@ function isMouseOverSubmenu(startX, startY) {
     let y = startY + i * (menuHeight + spacing); // 子选单的垂直位置
 
     if (
-      mouseX > x &&
-      mouseX < x + menuWidth &&
-      mouseY > y &&
-      mouseY < y + menuHeight
+      mouseX > x - 100 && // 左邊 100px
+      mouseX < x + menuWidth + 100 && // 右邊 100px
+      mouseY > y - 100 && // 上方 100px
+      mouseY < y + menuHeight + 200 // 下方 200px
     ) {
       submenuHoverIndex = i; // 设置悬停的子选单索引
       return true;
